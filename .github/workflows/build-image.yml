@@ -43,10 +43,9 @@ jobs:
         run: |
           # Fails the script immediately if a command exits with a non-zero status
           set -e 
-          
-          export WEBCLIENT_TAG="$web_tag"
-          export docker_username=${{ secrets.DOCKER_HOST }}
-          export docker_reponame=${{ secrets.DOCKER_REPO }}
-          
+          # Provide local fallbacks if secrets are missing during a fork/clone run
+          export docker_username=${{ secrets.DOCKER_HOST || 'localuser' }}
+          export docker_reponame=${{ secrets.DOCKER_REPO || 'i2b2' }}
+                    
           cd docker/
           bash create_docker_image.sh "$WEBCLIENT_TAG"
