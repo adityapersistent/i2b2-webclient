@@ -14,8 +14,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Check if secrets exist and output a boolean flag
+      - name: Check for Docker Secrets
+        id: secret-check
+        run: |
+          if [ -n "${{ secrets.DOCKER_LOGIN_TOKEN }}" ]; then
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+            export CI="true"
+          else
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Only attempt login if secrets are present
       - name: Login to Docker Registry
-        uses: docker/login-action@v2
+        if: steps.secret-check.outputs.has_secrets == 'true'
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HOST }}
           password: ${{ secrets.DOCKER_LOGIN_TOKEN }}

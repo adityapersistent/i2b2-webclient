@@ -1,4 +1,4 @@
-
+WEBCLIENT_TAG=$(echo "$1" | tr '/' '-')
 if [ "$CI" = "true" ]; then
     echo "Running in GitHub Actions.."
 else
@@ -21,7 +21,11 @@ sed -i 's/services.i2b2.org/i2b2-core-server:8080/'   $WEBCLIENT_REPO/i2b2_confi
 sed -i 's#127.0.0.1:8080/#i2b2-core-server:8080/#g'  $WEBCLIENT_REPO/proxy.php
 sed -i 's#http://services.i2b2.org#http://i2b2-core-server:8080#g' $WEBCLIENT_REPO/proxy.php
 
-docker build -t $docker_username/$docker_reponame:i2b2-webclient_latest $BASE/
+docker build -t $docker_username/$docker_reponame:i2b2-webclient_$WEBCLIENT_TAG $BASE/
+
+if [ "$CI" = "true" ]; then
+    docker push $docker_username/$docker_reponame:i2b2-webclient_$WEBCLIENT_TAG
+fi
 
 # docker buildx build --platform linux/amd64,linux/arm64 -t $docker_username/$docker_reponame:i2b2-webclient-$1-$date --push $BASE/
 
