@@ -49,4 +49,4 @@ jobs:
           export docker_reponame=${{ secrets.DOCKER_REPO || 'i2b2' }}
                     
           cd docker/
-          bash create_docker_image.sh "$WEBCLIENT_TAG"
+          bash create_docker_image.sh "${{ github.ref_name }}"
