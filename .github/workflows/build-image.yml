@@ -6,6 +6,18 @@ on:
       - '**'
 
   workflow_dispatch:
+    inputs:
+      core_server_image_branch:
+        description: "Core Server branch to use"
+        required: true
+        default: "master"
+        type: string
+
+      database_image_branch:
+        description: "Database branch to use"
+        required: true
+        default: "master"
+        type: string
 
 permissions:
   contents: read
@@ -17,6 +29,9 @@ jobs:
     environment: dev
     timeout-minutes: 60
 
+    outputs:
+      has_secrets: ${{ steps.check-secrets.outputs.has_secrets }}
+
     env:
       IMAGE_TAG: ${{ github.ref_name }}
 
@@ -26,8 +41,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Determine whether Docker credentials are available.
-      # Public forks typically do not receive repository secrets.
       - name: Check Docker credentials
         id: check-secrets
         shell: bash
@@ -47,17 +60,89 @@ jobs:
 
       - name: Build Docker image
         env:
-          HAS_SECRETS: ${{ steps.check-secrets.outputs.has_secrets }}
           DOCKER_USERNAME: ${{ secrets.DOCKER_HOST || 'localuser' }}
           DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPO || 'i2b2' }}
         shell: bash
         run: |
           set -Eeuo pipefail
 
+          export HAS_SECRETS=${{ needs.build.outputs.has_secrets }}
           echo "Building image tag: $IMAGE_TAG"
           echo "Docker credentials available: $HAS_SECRETS"
 
-          test -d docker
           cd docker
-          test -f create_docker_image.sh
+          #creating and saving docker image
           bash create_docker_image.sh "$IMAGE_TAG"
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: i2b2-webclient-image
+          path: i2b2-webclient.tar
+          retention-days: 1
+
+  ui-smoke-test:
+    name: UI Smoke Test
+    needs: build
+    runs-on: ubuntu-latest
+
+    env:
+      CORE_SERVER_BRANCH: ${{ inputs.core_server_image_branch || 'master' }}
+      DATABASE_BRANCH: ${{ inputs.database_image_branch || 'master' }}
+
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: i2b2-webclient-image
+
+      - name: Load Docker image
+        id: load-image
+        shell: bash
+        run: |
+          LOAD_OUTPUT=$(docker load -i i2b2-webclient.tar)
+
+          WEBCLIENT_IMAGE=$(echo "$LOAD_OUTPUT" | sed -n 's/^Loaded image: //p')
+
+          echo "Loaded image: $WEBCLIENT_IMAGE"
+
+          echo "webclient_image=$WEBCLIENT_IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout i2b2-webclient
+        uses: actions/checkout@v4
+        with:
+          path: i2b2-webclient
+
+      - name: Checkout i2b2-docker
+        uses: actions/checkout@v4
+        with:
+          repository: vaditya1998/i2b2-docker
+          path: i2b2-docker
+
+      - name: Start i2b2 application
+        shell: bash
+        run: |
+          cd i2b2-docker/pg
+
+          docker images
+          export HAS_SECRETS=${{ needs.build.outputs.has_secrets }}
+
+
+          bash webclient_ci.sh \
+            "${{ steps.load-image.outputs.webclient_image }}" \
+            "$CORE_SERVER_BRANCH" \
+            "$DATABASE_BRANCH" 
+
+          docker compose up -d
+
+      - name: Wait for startup
+        run: sleep 100
+
+      - name: Run UI smoke test
+        shell: bash
+        run: |
+          docker run --rm \
+            --network i2b2-net \
+            -v "${{ github.workspace }}/i2b2-webclient/ui-tests/tests/login:/tests" \
+            test-runner:latest \
+            python /tests/test_smoke_login.py
