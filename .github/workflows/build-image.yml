@@ -89,6 +89,8 @@ jobs:
     env:
       CORE_SERVER_BRANCH: ${{ inputs.core_server_image_branch || 'master' }}
       DATABASE_BRANCH: ${{ inputs.database_image_branch || 'master' }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_HOST || 'localuser' }}
+      DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPO || 'i2b2' }}
 
     steps:
       - name: Download image artifact
