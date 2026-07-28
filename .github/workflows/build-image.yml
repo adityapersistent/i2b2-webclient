@@ -87,7 +87,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
 
-
     env:
       CORE_SERVER_BRANCH: ${{ inputs.core_server_image_branch || 'master' }}
       DATABASE_BRANCH: ${{ inputs.database_image_branch || 'master' }}
@@ -102,15 +101,19 @@ jobs:
 
       - name: Load Docker image
         id: load-image
-        shell: bash
         run: |
           LOAD_OUTPUT=$(docker load -i i2b2-webclient.tar)
 
           WEBCLIENT_IMAGE=$(echo "$LOAD_OUTPUT" | sed -n 's/^Loaded image: //p')
 
-          echo "Loaded image: $WEBCLIENT_IMAGE"
-
           echo "webclient_image=$WEBCLIENT_IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate with Docker Registry
+        if: ${{ secrets.DOCKER_LOGIN_TOKEN != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HOST }}
+          password: ${{ secrets.DOCKER_LOGIN_TOKEN }}
 
       - name: Checkout i2b2-webclient
         uses: actions/checkout@v4
@@ -124,18 +127,15 @@ jobs:
           path: i2b2-docker
 
       - name: Start i2b2 application
-        shell: bash
         run: |
           cd i2b2-docker/pg
 
-          docker images
-          export HAS_SECRETS=${{ needs.build.outputs.has_secrets }}
-
+          export HAS_SECRETS=true
 
           bash webclient_ci.sh \
             "${{ steps.load-image.outputs.webclient_image }}" \
             "$CORE_SERVER_BRANCH" \
-            "$DATABASE_BRANCH" 
+            "$DATABASE_BRANCH"
 
           docker compose up -d
 
