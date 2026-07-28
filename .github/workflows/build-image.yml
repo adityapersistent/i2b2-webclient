@@ -85,6 +85,8 @@ jobs:
     name: UI Smoke Test
     needs: build
     runs-on: ubuntu-latest
+    environment: dev
+
 
     env:
       CORE_SERVER_BRANCH: ${{ inputs.core_server_image_branch || 'master' }}
@@ -146,5 +148,5 @@ jobs:
           docker run --rm \
             --network i2b2-net \
             -v "${{ github.workspace }}/i2b2-webclient/ui-tests/tests/login:/tests" \
-            test-runner:latest \
+            $TEST_RUNNER_IMAGE \
             python /tests/test_smoke_login.py
