@@ -63,7 +63,7 @@ echo "Building Docker image..."
 docker build -t "${IMAGE_TAG}" -f "${WEBCLIENT_REPO}/docker/Dockerfile" .
 
 # Saving Docker Image for UI Testing in the Testing Job
-docker save i2b2-webclient:${IMAGE_TAG} -o i2b2-webclient.tar
+docker save ${IMAGE_TAG} -o i2b2-webclient.tar
 
 ###############################################################################
 # Publish image when registry credentials are available
