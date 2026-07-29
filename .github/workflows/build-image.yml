@@ -157,5 +157,5 @@ jobs:
           docker run --rm \
             --network i2b2-net \
             -v "${{ github.workspace }}/i2b2-webclient/ui-tests/tests/login:/tests" \
-            "$TEST_RUNNER_IMAGE" \
+            $TEST_RUNNER_IMAGE \
             /tests/test_smoke_login.py
