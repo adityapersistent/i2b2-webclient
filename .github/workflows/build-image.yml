@@ -93,6 +93,7 @@ jobs:
       DATABASE_BRANCH: ${{ inputs.database_image_branch || 'master' }}
       DOCKER_USERNAME: ${{ secrets.DOCKER_HOST || 'localuser' }}
       DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPO || 'i2b2' }}
+      TEST_RUNNER_IMAGE: ${{ vars.TEST_RUNNER_IMAGE }}
 
     steps:
       - name: Download image artifact
@@ -157,5 +158,5 @@ jobs:
           docker run --rm \
             --network i2b2-net \
             -v "${{ github.workspace }}/i2b2-webclient/ui-tests/tests/login:/tests" \
-            $TEST_RUNNER_IMAGE \
-            /tests/test_smoke_login.py
+            "$TEST_RUNNER_IMAGE" \
+            python /tests/test_smoke_login.py
