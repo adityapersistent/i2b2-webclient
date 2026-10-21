@@ -200,20 +200,29 @@ jobs:
           path: i2b2-docker
 
       - name: Deploy i2b2 application stack
-
         shell: bash
-
+        env:
+          HAS_SECRETS: ${{ needs.build.outputs.has_secrets }}
         run: |
           set -Eeuo pipefail
 
           cd i2b2-docker/pg
 
-          # Update docker-compose.yml with the appropriate
-          # webclient, core-server and database image tags.
-          bash webclient_ci.sh \
-            "${{ steps.load-image.outputs.webclient_image }}" \
-            "${CORE_SERVER_BRANCH}" \
-            "${DATABASE_BRANCH}"
+          WEBCLIENT_IMAGE="${{ steps.load-image.outputs.webclient_image }}"
+
+          CORE_SERVER_IMAGE="${DOCKER_USERNAME}/${DOCKER_REPOSITORY}:i2b2-core-server_${CORE_SERVER_BRANCH}"
+          PGSQL_IMAGE="${DOCKER_USERNAME}/${DOCKER_REPOSITORY}:i2b2-data-pgsql_${DATABASE_BRANCH}"
+
+          echo "Webclient image: ${WEBCLIENT_IMAGE}"
+          echo "Core server image: ${CORE_SERVER_IMAGE}"
+          echo "Database image: ${PGSQL_IMAGE}"
+
+          if [ "$HAS_SECRETS" = "true" ]; then
+            sed -i "s|i2b2/i2b2-core-server:\${I2B2_CORE_SERVER_TAG}|${CORE_SERVER_IMAGE}|g" docker-compose.yml
+            sed -i "s|i2b2/i2b2-data-pgsql:\${I2B2_DATA_PGSQL_TAG}|${PGSQL_IMAGE}|g" docker-compose.yml
+          fi
+
+          sed -i "s|i2b2/i2b2-webclient:\${I2B2_WEBCLIENT_TAG}|${WEBCLIENT_IMAGE}|g" docker-compose.yml
 
           docker compose up -d
 
