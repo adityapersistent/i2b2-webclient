@@ -196,7 +196,7 @@ jobs:
         uses: actions/checkout@v4
 
         with:
-          repository: vaditya1998/i2b2-docker
+          repository: i2b2/i2b2-docker
           path: i2b2-docker
 
       - name: Deploy i2b2 application stack
