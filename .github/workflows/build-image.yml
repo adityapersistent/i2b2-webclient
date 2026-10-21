@@ -237,7 +237,7 @@ jobs:
 
           chmod +x \
             "${{ github.workspace }}/i2b2-webclient/ui-tests/tests/login/test_smoke_login.py"
-          docker stop i2b2-core-server 
+          
           docker run --rm \
             --network i2b2-net \
             -v "${{ github.workspace }}/i2b2-webclient/ui-tests/tests/login:/tests" \
