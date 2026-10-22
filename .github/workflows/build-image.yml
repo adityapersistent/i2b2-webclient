@@ -96,6 +96,7 @@ jobs:
           # Docker registry configuration
           DOCKER_USERNAME: ${{ secrets.DOCKER_HOST || 'localuser' }}
           DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPO || 'i2b2' }}
+          HAS_SECRETS: ${{ steps.check-secrets.outputs.has_secrets }}
 
         shell: bash
 
@@ -148,7 +149,7 @@ jobs:
       DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPO || 'i2b2' }}
 
       # Selenium test runner image
-      TEST_RUNNER_IMAGE: ${{ secrets.TEST_RUNNER_IMAGE }}
+      TEST_RUNNER_IMAGE: ${{ secrets.TEST_RUNNER_IMAGE || 'i2b2dev/i2b2:webclient_test_runner_v1' }}
 
     steps:
 
